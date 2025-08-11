@@ -343,7 +343,7 @@
                     const parsedStores = parseGoogleSheetsData(data.values);
                     setStores(parsedStores);
                     setLastUpdated(new Date());
-                    console.log('🏢 VITL STORES LOADED:', parsedStores.length, 'stores found');
+                    console.log('🏢 STORES LOADED:', parsedStores.length, 'stores found (VITL Reserved/Staffed + Non-VITL Open)');
 
                     // Add markers to map if map is loaded
                     if (mapLoaded) {
@@ -382,7 +382,7 @@
                     return stores;
                 }
                 
-                console.log('🏢 VITL FILTER: Only processing stores where Owner = "VITL"');
+                console.log('🏢 FILTER: Processing VITL Reserved/Staffed stores + Non-VITL Open stores only...');
                 
                 // Process data rows (skip header row)
                 const dataStartIndex = headerRowIndex + 1;
@@ -394,8 +394,9 @@
                         const status = row[0]?.toString().trim().toLowerCase();
                         const owner = row[1]?.toString().trim(); // Column B - Owner
                         
-                        // VITL FILTER: Only include stores where owner equals "VITL"
-                        if (owner === CONFIG.OWNER_FILTER && ['open', 'reserved', 'staffed'].includes(status)) {
+                        // FILTER: Include VITL stores (Reserved/Staffed) OR any Non-VITL stores with "Open" status
+                        if ((owner === CONFIG.OWNER_FILTER && ['reserved', 'staffed'].includes(status)) || 
+                            (owner !== CONFIG.OWNER_FILTER && status === 'open')) {
                             const latQ = parseFloat(row[16]); // Column Q - Latitude
                             const lngR = parseFloat(row[17]); // Column R - Longitude
                             
@@ -416,13 +417,13 @@
                                     longitude: lngR
                                 };
                                 stores.push(store);
-                                console.log(`✅ Added VITL store: ${store.storeName} (${store.status})`);
+                                console.log(`✅ Added store: ${store.storeName} (${store.status}, Owner: ${store.owner})`);
                             }
                         }
                     }
                 }
                 
-                console.log(`🏢 VITL PARSING COMPLETE: ${stores.length} VITL stores found`);
+                console.log(`🏢 PARSING COMPLETE: ${stores.length} stores found (VITL Reserved/Staffed + Non-VITL Open)`);
                 return stores;
             };
 
