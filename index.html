@@ -149,4 +149,586 @@
                 }
             };
 
-            const initialize
+            const initializeMap = () => {
+                console.log('🗺️ Initializing VITL corporate map dashboard...');
+                console.log('window.google available?', !!window.google);
+                console.log('window.google.maps available?', !!window.google?.maps);
+                console.log('window.google.maps.Map available?', !!window.google?.maps?.Map);
+                console.log('mapRef.current available?', !!mapRef.current);
+
+                if (!window.google?.maps?.Map || !mapRef.current) {
+                    console.log('❌ Google Maps or mapRef not ready yet');
+                    return false;
+                }
+
+                try {
+                    // Create map with simple styling
+                    map = new window.google.maps.Map(mapRef.current, {
+                        zoom: 4,
+                        center: { lat: 39.8283, lng: -98.5795 }, // Center of US
+                        mapTypeId: 'roadmap',
+                        restriction: {
+                            latLngBounds: {
+                                north: 49.0,
+                                south: 25.0,
+                                west: -125.0,
+                                east: -66.0,
+                            },
+                            strictBounds: false,
+                        },
+                        styles: [
+                            // Simple map styling - similar to original
+                            {
+                                featureType: 'poi',
+                                elementType: 'labels',
+                                stylers: [{ visibility: 'off' }]
+                            },
+                            {
+                                featureType: 'road',
+                                elementType: 'labels',
+                                stylers: [{ visibility: 'off' }]
+                            },
+                            {
+                                featureType: 'road.local',
+                                elementType: 'geometry',
+                                stylers: [{ visibility: 'off' }]
+                            },
+                            {
+                                featureType: 'road.arterial',
+                                elementType: 'geometry',
+                                stylers: [{ lightness: 20 }]
+                            },
+                            {
+                                featureType: 'water',
+                                elementType: 'labels',
+                                stylers: [{ visibility: 'off' }]
+                            },
+                            {
+                                featureType: 'administrative.locality',
+                                elementType: 'labels',
+                                stylers: [{ visibility: 'off' }]
+                            },
+                            {
+                                featureType: 'landscape',
+                                elementType: 'labels',
+                                stylers: [{ visibility: 'off' }]
+                            },
+                            {
+                                featureType: 'administrative.province',
+                                elementType: 'geometry.stroke',
+                                stylers: [{ color: '#999999', weight: 1 }]
+                            },
+                            {
+                                featureType: 'transit',
+                                elementType: 'all',
+                                stylers: [{ visibility: 'off' }]
+                            }
+                        ],
+                        streetViewControl: false,
+                        fullscreenControl: false,
+                        mapTypeControl: false
+                    });
+
+                    console.log('✅ VITL Corporate Map initialized successfully');
+                    setMapLoaded(true);
+                    return true;
+                } catch (error) {
+                    console.error('❌ Error initializing map:', error);
+                    return false;
+                }
+            };
+
+            const addMarkersToMap = (storeData) => {
+                if (!map || !window.google) return;
+
+                // Clear existing markers
+                markers.forEach(marker => marker.setMap(null));
+                markers = [];
+
+                console.log(`🏢 Adding ${storeData.length} VITL store markers to map...`);
+
+                // Add new markers for VITL stores
+                storeData.forEach(store => {
+                    const marker = new window.google.maps.Marker({
+                        position: { lat: store.latitude, lng: store.longitude },
+                        map: map,
+                        title: `VITL ${store.storeName}`,
+                        icon: {
+                            path: window.google.maps.SymbolPath.CIRCLE,
+                            fillColor: getStatusColor(store.status),
+                            fillOpacity: 1,
+                            strokeColor: '#ffffff',
+                            strokeWeight: 1,
+                            scale: 8
+                        }
+                    });
+
+                    const statusDisplay = store.status.charAt(0).toUpperCase() + store.status.slice(1).toLowerCase();
+
+                    let buttonHtml = '';
+                    if (store.status === 'open') {
+                        buttonHtml = `<a href="${CONFIG.RESERVE_URL}" target="_blank" style="background: #059669; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;">Reserve Store</a>`;
+                    }
+                    // No buttons for Reserved/Staffed stores
+
+                    const infoWindow = new window.google.maps.InfoWindow({
+                        content: `
+                            <div style="padding: 8px; min-width: 200px;">
+                                <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: bold;">${store.storeName}: ${store.storeNumber}</h3>
+                                <h4 style="margin: 0 0 8px 0; font-size: 12px; font-weight: normal; color: #666;">${store.retailer}</h4>
+                                <p style="margin: 0 0 4px 0; font-size: 14px;">${store.address}</p>
+                                <p style="margin: 0 0 8px 0; font-size: 14px;">${store.city}, ${store.state} ${store.zip}</p>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                                    <span style="background: ${getStatusBgColor(store.status)}; color: ${getStatusTextColor(store.status)}; padding: 4px 12px; border-radius: 12px; font-size: 14px; font-weight: 500;">${statusDisplay}</span>
+                                    ${buttonHtml}
+                                </div>
+                            </div>
+                        `
+                    });
+
+                    marker.addListener('click', () => {
+                        // Close any open info windows
+                        markers.forEach(m => m.infoWindow && m.infoWindow.close());
+                        
+                        // Open this info window
+                        infoWindow.open(map, marker);
+                        marker.infoWindow = infoWindow;
+                        
+                        // Update side panel
+                        setSelectedStore(store);
+                    });
+
+                    markers.push(marker);
+                });
+
+                // Fit map to show all VITL stores
+                if (markers.length > 0) {
+                    console.log(`📍 Added ${markers.length} VITL store markers to corporate dashboard`);
+                    const bounds = new window.google.maps.LatLngBounds();
+                    markers.forEach(marker => bounds.extend(marker.getPosition()));
+                    
+                    map.fitBounds(bounds);
+                    
+                    const listener = window.google.maps.event.addListener(map, 'idle', function() {
+                        const currentZoom = map.getZoom();
+                        if (currentZoom > 8) map.setZoom(8);
+                        if (currentZoom < 3) map.setZoom(3);
+                        window.google.maps.event.removeListener(listener);
+                    });
+                } else {
+                    console.log('⚠️ No VITL stores found, keeping US center view');
+                    map.setCenter({ lat: 39.8283, lng: -98.5795 });
+                    map.setZoom(4);
+                }
+            };
+
+            const fetchFromGoogleSheets = async () => {
+                try {
+                    setLoading(true);
+                    setError('');
+                    setUpdateAnimation(true);
+
+                    const encodedSheetName = encodeURIComponent(CONFIG.SHEET_NAME);
+                    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodedSheetName}?key=${CONFIG.API_KEY}`;
+                    
+                    console.log('🔗 Fetching VITL stores from:', url);
+                    
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        console.error('❌ API Error Response:', errorData);
+                        throw new Error(`Google Sheets API error: ${response.status} - ${errorData.error?.message || response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('✅ Data received for VITL corporate dashboard');
+                    console.log('📄 Total rows received:', data.values ? data.values.length : 0);
+                    
+                    if (!data.values || data.values.length === 0) {
+                        throw new Error('No data found in the specified sheet');
+                    }
+
+                    const parsedStores = parseGoogleSheetsData(data.values);
+                    setStores(parsedStores);
+                    setLastUpdated(new Date());
+                    console.log('🏢 STORES LOADED:', parsedStores.length, 'stores found (VITL Reserved/Staffed + Non-VITL Open)');
+
+                    // Add markers to map if map is loaded
+                    if (mapLoaded) {
+                        addMarkersToMap(parsedStores);
+                    }
+
+                    // Trigger update animation
+                    setTimeout(() => setUpdateAnimation(false), 2000);
+                    
+                } catch (err) {
+                    console.error('💥 Error fetching VITL store data:', err);
+                    setError(err.message);
+                    setUpdateAnimation(false);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const parseGoogleSheetsData = (values) => {
+                const stores = [];
+                
+                console.log('🔍 Parsing sheet data for VITL stores only...');
+                
+                // Find the header row
+                let headerRowIndex = -1;
+                for (let i = 0; i < Math.min(3, values.length); i++) {
+                    if (values[i] && values[i][0] && values[i][0].toString().toLowerCase().includes('status')) {
+                        headerRowIndex = i;
+                        console.log(`📋 Found header row at index ${i}:`, values[i]);
+                        break;
+                    }
+                }
+                
+                if (headerRowIndex === -1) {
+                    console.log('❌ Could not find header row with STATUS column');
+                    return stores;
+                }
+                
+                console.log('🏢 FILTER: Processing VITL Reserved/Staffed stores + Non-VITL Open stores only...');
+                
+                // Process data rows (skip header row)
+                const dataStartIndex = headerRowIndex + 1;
+                
+                // Process all data rows with more flexible column check
+                for (let i = dataStartIndex; i < values.length; i++) {
+                    const row = values[i];
+                    
+                    if (row.length >= 19) { // Use original column check, but try to access Column Z if available
+                        const status = row[0]?.toString().trim().toLowerCase();
+                        const owner = row[1]?.toString().trim(); // Column B - Owner
+                        
+                        // FILTER: Include VITL stores (Reserved/Staffed) OR any Non-VITL stores with "Open" status
+                        if ((owner === CONFIG.OWNER_FILTER && ['reserved', 'staffed'].includes(status)) || 
+                            (owner !== CONFIG.OWNER_FILTER && status === 'open')) {
+                            const latQ = parseFloat(row[16]); // Column Q - Latitude
+                            const lngR = parseFloat(row[17]); // Column R - Longitude
+                            
+                            if (!isNaN(latQ) && !isNaN(lngR)) {
+                                const store = {
+                                    status: row[0]?.toString().trim() || '',
+                                    owner: owner,                                       // Column B - Owner (will be "VITL")
+                                    retailer: row[8]?.toString().trim() || '',
+                                    reserveLink: row[9]?.toString().trim() || '',       // Column J - Reservation Link (legacy)
+                                    reservationLink: CONFIG.RESERVE_URL, // Use the configured reservation URL for all stores
+                                    storeNumber: row[10]?.toString().trim() || '',
+                                    storeName: row[11]?.toString().trim() || '',
+                                    address: row[12]?.toString().trim() || '',
+                                    city: row[13]?.toString().trim() || '',
+                                    state: row[14]?.toString().trim() || '',
+                                    zip: row[18]?.toString().trim() || '',
+                                    latitude: latQ,
+                                    longitude: lngR
+                                };
+                                stores.push(store);
+                                
+                                // Simple logging for first 5 stores
+                                if (stores.length <= 5) {
+                                    console.log(`✅ Store #${stores.length}: ${store.storeName} (${store.status}, Owner: "${store.owner}")`);
+                                    console.log(`   Reservation link: "${store.reservationLink}"`);
+                                    console.log(`   Should show Reserve button: ${store.status === 'open' && !!store.reservationLink}`);
+                                } else if (stores.length % 100 === 0) {
+                                    console.log(`✅ Processed ${stores.length} stores...`);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                console.log(`🏢 PARSING COMPLETE: ${stores.length} stores found (VITL Reserved/Staffed + Non-VITL Open)`);
+                return stores;
+            };
+
+            // Initialize map when Google Maps API loads
+            useEffect(() => {
+                let attempts = 0;
+                const maxAttempts = 50;
+
+                const checkGoogleMaps = () => {
+                    attempts++;
+                    console.log(`🔄 Attempt ${attempts}: Checking for Google Maps (VITL Dashboard)...`);
+                    
+                    if (window.google?.maps?.Map && mapRef.current) {
+                        console.log('✅ Google Maps ready for VITL dashboard, initializing...');
+                        const success = initializeMap();
+                        if (success) {
+                            console.log('✅ VITL map initialization successful');
+                            return;
+                        }
+                    }
+                    
+                    if (attempts < maxAttempts) {
+                        setTimeout(checkGoogleMaps, 100);
+                    } else {
+                        console.error('❌ Failed to initialize Google Maps for VITL dashboard');
+                        setError('Failed to load Google Maps. Please refresh the page.');
+                    }
+                };
+                
+                checkGoogleMaps();
+            }, []);
+
+            // Update markers when stores or filters change
+            useEffect(() => {
+                if (mapLoaded && stores.length > 0) {
+                    console.log('🔄 VITL filters changed, updating map...');
+                    addMarkersToMap(filteredStores);
+                }
+            }, [stores, filteredStores, mapLoaded, searchTerm, statusFilter, stateFilter]);
+
+            // Initial load
+            useEffect(() => {
+                fetchFromGoogleSheets();
+            }, []);
+
+            // Auto-refresh setup for corporate dashboard
+            useEffect(() => {
+                if (CONFIG.REFRESH_MINUTES > 0) {
+                    console.log(`⏰ Setting up auto-refresh every ${CONFIG.REFRESH_MINUTES} minutes for VITL dashboard`);
+                    const interval = setInterval(() => {
+                        console.log('🔄 Auto-refreshing VITL store data...');
+                        fetchFromGoogleSheets();
+                    }, CONFIG.REFRESH_MINUTES * 60 * 1000);
+
+                    return () => clearInterval(interval);
+                }
+            }, []);
+
+            const filteredStores = useMemo(() => {
+                return stores.filter(store => {
+                    const matchesSearch = store.storeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                       store.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                       store.retailer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                       store.state.toLowerCase().includes(searchTerm.toLowerCase());
+                    const matchesStatus = statusFilter === 'all' || store.status.toLowerCase() === statusFilter;
+                    const matchesState = stateFilter === 'all' || store.state === stateFilter;
+                    
+                    return matchesSearch && matchesStatus && matchesState;
+                });
+            }, [stores, searchTerm, statusFilter, stateFilter]);
+
+            const uniqueStates = [...new Set(stores.map(store => store.state))].filter(state => state && state.trim() !== '').sort();
+            const statusCounts = stores.reduce((acc, store) => {
+                const status = store.status.toLowerCase();
+                acc[status] = (acc[status] || 0) + 1;
+                return acc;
+            }, {});
+
+            // Calculate corporate metrics
+            const totalStores = stores.length;
+            const operationalStores = statusCounts.staffed || 0;
+            const availableStores = statusCounts.open || 0;
+            const pendingStores = statusCounts.reserved || 0;
+            const operationalPercentage = totalStores > 0 ? Math.round((operationalStores / totalStores) * 100) : 0;
+
+            return (
+                <div className="w-full h-screen bg-gray-50 flex flex-col">
+                    {/* Header */}
+                    <div className="bg-white shadow-sm border-b px-4 md:px-6 py-3">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
+                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">VITL Stores Map</h1>
+                            <button
+                                onClick={fetchFromGoogleSheets}
+                                disabled={loading}
+                                className="px-4 md:px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 text-base md:text-lg touch-manipulation"
+                            >
+                                {loading ? <Loader className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+                                <span className="hidden sm:inline">Refresh Data</span>
+                                <span className="sm:hidden">Refresh</span>
+                            </button>
+                        </div>
+
+                        {error && (
+                            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+                                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                                <span className="text-red-700 text-base">{error}</span>
+                            </div>
+                        )}
+
+                        {lastUpdated && (
+                            <div className="mb-3 text-sm md:text-base text-gray-600">
+                                Last updated: {lastUpdated.toLocaleString()}
+                                {CONFIG.REFRESH_MINUTES > 0 && (
+                                    <span className="hidden sm:inline"> • Auto-refresh every {CONFIG.REFRESH_MINUTES} minutes</span>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Status Summary */}
+                        <div className="mb-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded-full bg-green-500"></div>
+                                    <span className="font-medium text-green-800">Open</span>
+                                </div>
+                                <div className="text-2xl font-bold text-green-700 mt-1">{statusCounts.open || 0}</div>
+                            </div>
+                            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
+                                <a 
+                                    href="https://docs.google.com/spreadsheets/d/12PdSZNlFB23ieb8Er35lXuNWIN3viA65YhsutwWNBJU/edit?gid=1169991112#gid=1169991112"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block hover:bg-gradient-to-br hover:from-yellow-100 hover:to-yellow-200 transition-colors duration-200"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
+                                        <span className="font-medium text-yellow-800">Reserved</span>
+                                    </div>
+                                    <div className="text-2xl font-bold text-yellow-700 mt-1">{statusCounts.reserved || 0}</div>
+                                </a>
+                            </div>
+                            <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-red-200">
+                                <a 
+                                    href="https://docs.google.com/spreadsheets/d/12PdSZNlFB23ieb8Er35lXuNWIN3viA65YhsutwWNBJU/edit?gid=1977784524#gid=1977784524"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block hover:bg-gradient-to-br hover:from-red-100 hover:to-red-200 transition-colors duration-200"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 rounded-full bg-red-500"></div>
+                                        <span className="font-medium text-red-800">Staffed</span>
+                                    </div>
+                                    <div className="text-2xl font-bold text-red-700 mt-1">{statusCounts.staffed || 0}</div>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        {/* Filters */}
+                        <div className="flex flex-col lg:flex-row gap-3 md:gap-4 items-stretch lg:items-center">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <Search className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                                <input
+                                    type="text"
+                                    placeholder="Search stores, cities, retailers..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="flex-1 px-3 py-2 border rounded-lg text-base md:text-lg touch-manipulation"
+                                />
+                            </div>
+                            
+                            <div className="flex flex-wrap lg:flex-nowrap items-center gap-3">
+                                <div className="flex items-center gap-2">
+                                    <Filter className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                                    <select
+                                        value={statusFilter}
+                                        onChange={(e) => setStatusFilter(e.target.value)}
+                                        className="px-3 py-2 border rounded-lg text-base md:text-lg touch-manipulation min-w-0"
+                                    >
+                                        <option value="all">All Status</option>
+                                        <option value="open">Open</option>
+                                        <option value="reserved">Reserved</option>
+                                        <option value="staffed">Staffed</option>
+                                    </select>
+                                </div>
+
+                                <select
+                                    value={stateFilter}
+                                    onChange={(e) => setStateFilter(e.target.value)}
+                                    className="px-3 py-2 border rounded-lg text-base md:text-lg touch-manipulation min-w-0"
+                                >
+                                    <option value="all">All States</option>
+                                    {uniqueStates.map(state => (
+                                        <option key={state} value={state}>
+                                            {state || 'Unknown'}
+                                        </option>
+                                    ))}
+                                </select>
+                                
+                                <div className="text-base md:text-lg text-gray-600 whitespace-nowrap font-medium">
+                                    Showing {filteredStores.length} of {totalStores}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 flex">
+                        {/* Google Map */}
+                        <div className="flex-1 relative">
+                            <div ref={mapRef} id="map" className="w-full h-full"></div>
+                            
+                            {loading && (
+                                <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10">
+                                    <div className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl shadow-lg border">
+                                        <Loader className="w-8 h-8 animate-spin text-blue-600" />
+                                        <span className="text-gray-700 font-medium">Loading VITL store data...</span>
+                                        <div className="text-sm text-gray-500">Filtering for VITL-owned locations</div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Store Details Panel */}
+                        {selectedStore && (
+                            <div className="w-full sm:w-80 bg-white shadow-lg border-l overflow-y-auto">
+                                <div className="p-4 md:p-5">
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="flex-1 min-w-0">
+                                            <h2 className="text-xl md:text-2xl font-bold truncate">{selectedStore.storeName}: {selectedStore.storeNumber}</h2>
+                                            <p className="text-base md:text-lg text-gray-500 mt-1">{selectedStore.retailer}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setSelectedStore(null)}
+                                            className="text-gray-400 hover:text-gray-600 text-3xl ml-3 touch-manipulation flex-shrink-0"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="space-y-4">
+                                        <div>
+                                            <div className="text-base font-medium text-gray-700 mb-1">Status</div>
+                                            <div 
+                                                className="inline-block px-3 py-2 rounded-full text-base font-medium"
+                                                style={{ 
+                                                    backgroundColor: getStatusBgColor(selectedStore.status),
+                                                    color: getStatusTextColor(selectedStore.status)
+                                                }}
+                                            >
+                                                {selectedStore.status.charAt(0).toUpperCase() + selectedStore.status.slice(1).toLowerCase()}
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <div className="text-base font-medium text-gray-700 mb-1">Store Number</div>
+                                            <div className="text-lg text-gray-900">{selectedStore.storeNumber}</div>
+                                        </div>
+                                        
+                                        <div>
+                                            <div className="text-base font-medium text-gray-700 mb-1">Address</div>
+                                            <div className="text-lg text-gray-900 leading-relaxed">
+                                                {selectedStore.address}<br/>
+                                                {selectedStore.city}, {selectedStore.state} {selectedStore.zip}
+                                            </div>
+                                        </div>
+
+                                        {selectedStore.status === 'open' && (
+                                            <div className="mt-6 pt-4 border-t">
+                                                <a
+                                                    href={CONFIG.RESERVE_URL}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 font-medium text-center block"
+                                                >
+                                                    Reserve Store
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<VITLStoresMap />, document.getElementById('root'));
+    </script>
+</body>
+</html>
