@@ -300,7 +300,7 @@
 
                     let buttonHtml = '';
                     if (statusLower === 'open') {
-                        buttonHtml = `<div style="margin-top: 12px; text-align: center;"><a href="${CONFIG.RESERVE_URL}" target="_blank" style="background: #059669; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🏪 Reserve This Store</a></div>`;
+                        buttonHtml = `<div style="margin-top: 12px; text-align: center;"><a href="${CONFIG.RESERVE_URL}" target="_blank" style="background: #059669; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Reserve</a></div>`;
                         console.log(`✅ Reserve button HTML created for ${store.storeName}: ${buttonHtml.length} chars`);
                     } else {
                         console.log(`❌ No button for ${store.storeName} (status: "${store.status}" processed: "${statusLower}")`);
@@ -808,7 +808,7 @@
                                                     rel="noopener noreferrer"
                                                     className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 font-medium text-center block transition-colors"
                                                 >
-                                                    🏪 Reserve This Store
+                                                    Reserve
                                                 </a>
                                             ) : (
                                                 <div className="w-full bg-gray-200 text-gray-500 px-4 py-3 rounded-lg text-center">
