@@ -262,6 +262,13 @@
 
                     const statusDisplay = store.status.charAt(0).toUpperCase() + store.status.slice(1).toLowerCase();
 
+                    let buttonHtml = '';
+                    if (store.status === 'open' && store.reservationLink) {
+                        buttonHtml = `<a href="${store.reservationLink}" target="_blank" style="background: #059669; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;">Reserve</a>`;
+                    } else if (store.status === 'reserved' || store.status === 'staffed') {
+                        buttonHtml = `<a href="https://docs.google.com/spreadsheets/d/12PdSZNlFB23ieb8Er35lXuNWIN3viA65YhsutwWNBJU/edit?gid=424102901#gid=424102901" target="_blank" style="background: #3b82f6; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;">View Details</a>`;
+                    }
+
                     const infoWindow = new window.google.maps.InfoWindow({
                         content: `
                             <div style="padding: 8px; min-width: 200px;">
@@ -271,11 +278,7 @@
                                 <p style="margin: 0 0 8px 0; font-size: 14px;">${store.city}, ${store.state} ${store.zip}</p>
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
                                     <span style="background: ${getStatusBgColor(store.status)}; color: ${getStatusTextColor(store.status)}; padding: 4px 12px; border-radius: 12px; font-size: 14px; font-weight: 500;">${statusDisplay}</span>
-                                    ${store.status === 'open' ? 
-                                        (store.reservationLink ? `<a href="${store.reservationLink}" target="_blank" style="background: #059669; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;">Reserve</a>` : '') : 
-                                        (store.status === 'reserved' || store.status === 'staffed') ? 
-                                        `<a href="https://docs.google.com/spreadsheets/d/12PdSZNlFB23ieb8Er35lXuNWIN3viA65YhsutwWNBJU/edit?gid=424102901#gid=424102901" target="_blank" style="background: #3b82f6; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;">View Details</a>` : ''
-                                    }
+                                    ${buttonHtml}
                                 </div>
                             </div>
                         `
@@ -556,18 +559,32 @@
                                 <div className="text-2xl font-bold text-green-700 mt-1">{statusCounts.open || 0}</div>
                             </div>
                             <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
-                                    <span className="font-medium text-yellow-800">Reserved</span>
-                                </div>
-                                <div className="text-2xl font-bold text-yellow-700 mt-1">{statusCounts.reserved || 0}</div>
+                                <a 
+                                    href="https://docs.google.com/spreadsheets/d/12PdSZNlFB23ieb8Er35lXuNWIN3viA65YhsutwWNBJU/edit?gid=424102901#gid=424102901"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block hover:bg-gradient-to-br hover:from-yellow-100 hover:to-yellow-200 transition-colors duration-200"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
+                                        <span className="font-medium text-yellow-800">Reserved</span>
+                                    </div>
+                                    <div className="text-2xl font-bold text-yellow-700 mt-1">{statusCounts.reserved || 0}</div>
+                                </a>
                             </div>
                             <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-red-200">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded-full bg-red-500"></div>
-                                    <span className="font-medium text-red-800">Staffed</span>
-                                </div>
-                                <div className="text-2xl font-bold text-red-700 mt-1">{statusCounts.staffed || 0}</div>
+                                <a 
+                                    href="https://docs.google.com/spreadsheets/d/12PdSZNlFB23ieb8Er35lXuNWIN3viA65YhsutwWNBJU/edit?gid=424102901#gid=424102901"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block hover:bg-gradient-to-br hover:from-red-100 hover:to-red-200 transition-colors duration-200"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 rounded-full bg-red-500"></div>
+                                        <span className="font-medium text-red-800">Staffed</span>
+                                    </div>
+                                    <div className="text-2xl font-bold text-red-700 mt-1">{statusCounts.staffed || 0}</div>
+                                </a>
                             </div>
                         </div>
                         
