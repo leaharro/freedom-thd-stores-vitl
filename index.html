@@ -271,7 +271,11 @@
                                 <p style="margin: 0 0 8px 0; font-size: 14px;">${store.city}, ${store.state} ${store.zip}</p>
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
                                     <span style="background: ${getStatusBgColor(store.status)}; color: ${getStatusTextColor(store.status)}; padding: 4px 12px; border-radius: 12px; font-size: 14px; font-weight: 500;">${statusDisplay}</span>
-                                    ${store.reservationLink ? `<a href="${store.reservationLink}" target="_blank" style="background: #059669; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;">Reserve</a>` : ''}
+                                    ${store.status === 'open' && store.reservationLink ? 
+                                        `<a href="${store.reservationLink}" target="_blank" style="background: #059669; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;">Reserve</a>` : 
+                                        (store.status === 'reserved' || store.status === 'staffed') ? 
+                                        `<a href="https://docs.google.com/spreadsheets/d/12PdSZNlFB23ieb8Er35lXuNWIN3viA65YhsutwWNBJU/edit?gid=424102901#gid=424102901" target="_blank" style="background: #3b82f6; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;">View Details</a>` : ''
+                                    }
                                 </div>
                             </div>
                         `
@@ -675,7 +679,7 @@
                                             </div>
                                         </div>
 
-                                        {selectedStore.reservationLink && (
+                                        {selectedStore.status === 'open' && selectedStore.reservationLink && (
                                             <div className="mt-6 pt-4 border-t">
                                                 <a
                                                     href={selectedStore.reservationLink}
@@ -684,6 +688,19 @@
                                                     className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 font-medium text-center block"
                                                 >
                                                     Reserve Store
+                                                </a>
+                                            </div>
+                                        )}
+
+                                        {(selectedStore.status === 'reserved' || selectedStore.status === 'staffed') && (
+                                            <div className="mt-6 pt-4 border-t">
+                                                <a
+                                                    href="https://docs.google.com/spreadsheets/d/12PdSZNlFB23ieb8Er35lXuNWIN3viA65YhsutwWNBJU/edit?gid=424102901#gid=424102901"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 font-medium text-center block"
+                                                >
+                                                    View Store Details
                                                 </a>
                                             </div>
                                         )}
