@@ -425,14 +425,13 @@
                                 };
                                 stores.push(store);
                                 
-                                // Enhanced logging for debugging
-                                if (i < dataStartIndex + 5) { // Log details for first 5 stores
-                                    console.log(`✅ Added store: ${store.storeName} (${store.status}, Owner: ${store.owner})`);
-                                    console.log(`   Reservation link (Col J): "${store.reservationLink}"`);
-                                    console.log(`   Has reservation link: ${!!store.reservationLink}`);
+                                // Simple logging for first 5 stores
+                                if (stores.length <= 5) {
+                                    console.log(`✅ Store #${stores.length}: ${store.storeName} (${store.status}, Owner: "${store.owner}")`);
+                                    console.log(`   Reservation link: "${store.reservationLink}"`);
                                     console.log(`   Should show Reserve button: ${store.status === 'open' && !!store.reservationLink}`);
-                                } else {
-                                    console.log(`✅ Added store: ${store.storeName} (${store.status}, Owner: ${store.owner})`);
+                                } else if (stores.length % 100 === 0) {
+                                    console.log(`✅ Processed ${stores.length} stores...`);
                                 }
                             }
                         }
