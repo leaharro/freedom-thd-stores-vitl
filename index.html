@@ -397,7 +397,7 @@
                 for (let i = dataStartIndex; i < values.length; i++) {
                     const row = values[i];
                     
-                    if (row.length >= 19) {
+                    if (row.length >= 26) { // Updated to ensure Column Z access
                         const status = row[0]?.toString().trim().toLowerCase();
                         const owner = row[1]?.toString().trim(); // Column B - Owner
                         
