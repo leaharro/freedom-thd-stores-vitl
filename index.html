@@ -265,9 +265,8 @@
                     let buttonHtml = '';
                     if (store.status === 'open' && store.reservationLink) {
                         buttonHtml = `<a href="${store.reservationLink}" target="_blank" style="background: #059669; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;">Reserve</a>`;
-                    } else if (store.status === 'reserved' || store.status === 'staffed') {
-                        buttonHtml = `<a href="https://docs.google.com/spreadsheets/d/12PdSZNlFB23ieb8Er35lXuNWIN3viA65YhsutwWNBJU/edit?gid=424102901#gid=424102901" target="_blank" style="background: #3b82f6; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;">View Details</a>`;
                     }
+                    // No buttons for Reserved/Staffed stores
 
                     const infoWindow = new window.google.maps.InfoWindow({
                         content: `
@@ -705,19 +704,6 @@
                                                     className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 font-medium text-center block"
                                                 >
                                                     Reserve Store
-                                                </a>
-                                            </div>
-                                        )}
-
-                                        {(selectedStore.status === 'reserved' || selectedStore.status === 'staffed') && (
-                                            <div className="mt-6 pt-4 border-t">
-                                                <a
-                                                    href="https://docs.google.com/spreadsheets/d/12PdSZNlFB23ieb8Er35lXuNWIN3viA65YhsutwWNBJU/edit?gid=424102901#gid=424102901"
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 font-medium text-center block"
-                                                >
-                                                    View Store Details
                                                 </a>
                                             </div>
                                         )}
