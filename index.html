@@ -393,10 +393,11 @@
                 // Process data rows (skip header row)
                 const dataStartIndex = headerRowIndex + 1;
                 
+                // Process all data rows with more flexible column check
                 for (let i = dataStartIndex; i < values.length; i++) {
                     const row = values[i];
                     
-                    if (row.length >= 26) { // Updated to ensure Column Z access
+                    if (row.length >= 19) { // Use original column check, but try to access Column Z if available
                         const status = row[0]?.toString().trim().toLowerCase();
                         const owner = row[1]?.toString().trim(); // Column B - Owner
                         
@@ -411,8 +412,8 @@
                                     status: row[0]?.toString().trim() || '',
                                     owner: owner,                                       // Column B - Owner (will be "VITL")
                                     retailer: row[8]?.toString().trim() || '',
-                                    reserveLink: row[9]?.toString().trim() || '',
-                                    reservationLink: row[25]?.toString().trim() || '',  // Column Z - Reservation Link
+                                    reserveLink: row[9]?.toString().trim() || '',       // Column J - Reservation Link (legacy)
+                                    reservationLink: row[9]?.toString().trim() || '',   // Column J - Reservation Link (current)
                                     storeNumber: row[10]?.toString().trim() || '',
                                     storeName: row[11]?.toString().trim() || '',
                                     address: row[12]?.toString().trim() || '',
@@ -423,7 +424,15 @@
                                     longitude: lngR
                                 };
                                 stores.push(store);
-                                console.log(`✅ Added store: ${store.storeName} (${store.status}, Owner: ${store.owner})`);
+                                
+                                // Enhanced logging for debugging
+                                if (i < dataStartIndex + 5) { // Log details for first 5 stores
+                                    console.log(`✅ Added store: ${store.storeName} (${store.status}, Owner: ${store.owner})`);
+                                    console.log(`   Reservation link (Col J): "${store.reservationLink}"`);
+                                    console.log(`   Has reservation link: ${!!store.reservationLink}`);
+                                } else {
+                                    console.log(`✅ Added store: ${store.storeName} (${store.status}, Owner: ${store.owner})`);
+                                }
                             }
                         }
                     }
