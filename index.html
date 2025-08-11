@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VITL Stores Map</title>
+    <title>VITL Stores Map - Debug Version</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -13,6 +13,21 @@
     <style>
         body { margin: 0; font-family: system-ui, -apple-system, sans-serif; }
         #map { height: 100%; width: 100%; }
+        .debug-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-width: 300px;
+            z-index: 1000;
+            max-height: 200px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
@@ -111,6 +126,14 @@
             const [updateAnimation, setUpdateAnimation] = useState(false);
             const mapRef = useRef(null);
             const [mapLoaded, setMapLoaded] = useState(false);
+            
+            // DEBUG STATE
+            const [debugInfo, setDebugInfo] = useState([]);
+
+            const addDebugInfo = (message) => {
+                console.log('🔍 DEBUG:', message);
+                setDebugInfo(prev => [...prev.slice(-4), `${new Date().toLocaleTimeString()}: ${message}`]);
+            };
 
             // Enhanced status configuration for corporate dashboard
             const getStatusColor = (status) => {
@@ -246,9 +269,10 @@
                 markers = [];
 
                 console.log(`🏢 Adding ${storeData.length} VITL store markers to map...`);
+                addDebugInfo(`Adding ${storeData.length} markers to map`);
 
                 // Add new markers for VITL stores
-                storeData.forEach(store => {
+                storeData.forEach((store, index) => {
                     const marker = new window.google.maps.Marker({
                         position: { lat: store.latitude, lng: store.longitude },
                         map: map,
@@ -265,22 +289,39 @@
 
                     const statusDisplay = store.status.charAt(0).toUpperCase() + store.status.slice(1).toLowerCase();
 
-                    let buttonHtml = '';
-                    if (store.status === 'open') {
-                        buttonHtml = `<a href="${CONFIG.RESERVE_URL}" target="_blank" style="background: #059669; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;">Reserve Store</a>`;
+                    // DEBUG: Log button creation logic
+                    const willShowButton = store.status.toLowerCase() === 'open';
+                    console.log(`🔍 Store ${index + 1}: ${store.storeName} | Status: "${store.status}" | Will show button: ${willShowButton}`);
+                    
+                    if (index < 3) { // Log first 3 stores in detail
+                        addDebugInfo(`Store: ${store.storeName} | Status: "${store.status}" | Button: ${willShowButton}`);
                     }
-                    // No buttons for Reserved/Staffed stores
+
+                    let buttonHtml = '';
+                    if (store.status.toLowerCase() === 'open') {
+                        buttonHtml = `<a href="${CONFIG.RESERVE_URL}" target="_blank" style="background: #059669; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; display: inline-block; margin-top: 4px;">🏪 Reserve This Store</a>`;
+                        console.log(`✅ Reserve button created for ${store.storeName}`);
+                    } else {
+                        console.log(`❌ No button for ${store.storeName} (status: ${store.status})`);
+                    }
 
                     const infoWindow = new window.google.maps.InfoWindow({
                         content: `
-                            <div style="padding: 8px; min-width: 200px;">
-                                <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: bold;">${store.storeName}: ${store.storeNumber}</h3>
-                                <h4 style="margin: 0 0 8px 0; font-size: 12px; font-weight: normal; color: #666;">${store.retailer}</h4>
-                                <p style="margin: 0 0 4px 0; font-size: 14px;">${store.address}</p>
-                                <p style="margin: 0 0 8px 0; font-size: 14px;">${store.city}, ${store.state} ${store.zip}</p>
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                                    <span style="background: ${getStatusBgColor(store.status)}; color: ${getStatusTextColor(store.status)}; padding: 4px 12px; border-radius: 12px; font-size: 14px; font-weight: 500;">${statusDisplay}</span>
-                                    ${buttonHtml}
+                            <div style="padding: 12px; min-width: 220px; font-family: system-ui, sans-serif;">
+                                <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: bold; color: #1f2937;">${store.storeName}: ${store.storeNumber}</h3>
+                                <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: normal; color: #666;">${store.retailer}</h4>
+                                <p style="margin: 0 0 4px 0; font-size: 14px; color: #374151;">${store.address}</p>
+                                <p style="margin: 0 0 8px 0; font-size: 14px; color: #374151;">${store.city}, ${store.state} ${store.zip}</p>
+                                
+                                <div style="margin-top: 12px;">
+                                    <span style="background: ${getStatusBgColor(store.status)}; color: ${getStatusTextColor(store.status)}; padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-block;">${statusDisplay}</span>
+                                </div>
+                                
+                                ${buttonHtml ? `<div style="margin-top: 12px; text-align: center;">${buttonHtml}</div>` : ''}
+                                
+                                <!-- DEBUG INFO -->
+                                <div style="margin-top: 8px; padding: 6px; background: #f3f4f6; border-radius: 4px; font-size: 10px; color: #6b7280;">
+                                    DEBUG: Status="${store.status}" | Button=${!!buttonHtml} | URL=${CONFIG.RESERVE_URL ? 'Set' : 'Missing'}
                                 </div>
                             </div>
                         `
@@ -296,6 +337,9 @@
                         
                         // Update side panel
                         setSelectedStore(store);
+                        
+                        // DEBUG
+                        addDebugInfo(`Clicked: ${store.storeName} (${store.status})`);
                     });
 
                     markers.push(marker);
@@ -327,6 +371,7 @@
                     setLoading(true);
                     setError('');
                     setUpdateAnimation(true);
+                    addDebugInfo('Fetching data from Google Sheets...');
 
                     const encodedSheetName = encodeURIComponent(CONFIG.SHEET_NAME);
                     const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodedSheetName}?key=${CONFIG.API_KEY}`;
@@ -353,6 +398,7 @@
                     setStores(parsedStores);
                     setLastUpdated(new Date());
                     console.log('🏢 STORES LOADED:', parsedStores.length, 'stores found (VITL Reserved/Staffed + Non-VITL Open)');
+                    addDebugInfo(`Loaded ${parsedStores.length} stores`);
 
                     // Add markers to map if map is loaded
                     if (mapLoaded) {
@@ -366,6 +412,7 @@
                     console.error('💥 Error fetching VITL store data:', err);
                     setError(err.message);
                     setUpdateAnimation(false);
+                    addDebugInfo(`Error: ${err.message}`);
                 } finally {
                     setLoading(false);
                 }
@@ -388,6 +435,7 @@
                 
                 if (headerRowIndex === -1) {
                     console.log('❌ Could not find header row with STATUS column');
+                    addDebugInfo('ERROR: No header row found');
                     return stores;
                 }
                 
@@ -395,6 +443,9 @@
                 
                 // Process data rows (skip header row)
                 const dataStartIndex = headerRowIndex + 1;
+                let openStoreCount = 0;
+                let reservedStoreCount = 0;
+                let staffedStoreCount = 0;
                 
                 // Process all data rows with more flexible column check
                 for (let i = dataStartIndex; i < values.length; i++) {
@@ -403,6 +454,11 @@
                     if (row.length >= 19) { // Use original column check, but try to access Column Z if available
                         const status = row[0]?.toString().trim().toLowerCase();
                         const owner = row[1]?.toString().trim(); // Column B - Owner
+                        
+                        // DEBUG: Log status parsing for first few rows
+                        if (i < dataStartIndex + 5) {
+                            console.log(`🔍 Row ${i}: Status="${status}" | Owner="${owner}" | Raw status="${row[0]}"`);
+                        }
                         
                         // FILTER: Include VITL stores (Reserved/Staffed) OR any Non-VITL stores with "Open" status
                         if ((owner === CONFIG.OWNER_FILTER && ['reserved', 'staffed'].includes(status)) || 
@@ -428,11 +484,16 @@
                                 };
                                 stores.push(store);
                                 
+                                // Count by status for debugging
+                                if (status === 'open') openStoreCount++;
+                                else if (status === 'reserved') reservedStoreCount++;
+                                else if (status === 'staffed') staffedStoreCount++;
+                                
                                 // Simple logging for first 5 stores
                                 if (stores.length <= 5) {
                                     console.log(`✅ Store #${stores.length}: ${store.storeName} (${store.status}, Owner: "${store.owner}")`);
                                     console.log(`   Reservation link: "${store.reservationLink}"`);
-                                    console.log(`   Should show Reserve button: ${store.status === 'open' && !!store.reservationLink}`);
+                                    console.log(`   Should show Reserve button: ${store.status.toLowerCase() === 'open'}`);
                                 } else if (stores.length % 100 === 0) {
                                     console.log(`✅ Processed ${stores.length} stores...`);
                                 }
@@ -442,6 +503,9 @@
                 }
                 
                 console.log(`🏢 PARSING COMPLETE: ${stores.length} stores found (VITL Reserved/Staffed + Non-VITL Open)`);
+                console.log(`📊 Status breakdown: Open=${openStoreCount}, Reserved=${reservedStoreCount}, Staffed=${staffedStoreCount}`);
+                addDebugInfo(`Open stores: ${openStoreCount} | Reserved: ${reservedStoreCount} | Staffed: ${staffedStoreCount}`);
+                
                 return stores;
             };
 
@@ -529,10 +593,23 @@
 
             return (
                 <div className="w-full h-screen bg-gray-50 flex flex-col">
+                    {/* DEBUG PANEL */}
+                    <div className="debug-panel">
+                        <div style={{fontWeight: 'bold', marginBottom: '8px'}}>🔍 VITL DEBUG</div>
+                        <div>Reserve URL: {CONFIG.RESERVE_URL ? '✅ Set' : '❌ Missing'}</div>
+                        <div>Total Stores: {stores.length}</div>
+                        <div>Open Stores: {statusCounts.open || 0}</div>
+                        <div>Filtered Stores: {filteredStores.length}</div>
+                        <div>Selected: {selectedStore ? selectedStore.storeName : 'None'}</div>
+                        <div style={{marginTop: '8px', fontSize: '10px'}}>
+                            {debugInfo.map((info, i) => <div key={i}>{info}</div>)}
+                        </div>
+                    </div>
+
                     {/* Header */}
                     <div className="bg-white shadow-sm border-b px-4 md:px-6 py-3">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">VITL Stores Map</h1>
+                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">VITL Stores Map - DEBUG MODE</h1>
                             <button
                                 onClick={fetchFromGoogleSheets}
                                 disabled={loading}
@@ -568,6 +645,7 @@
                                     <span className="font-medium text-green-800">Open</span>
                                 </div>
                                 <div className="text-2xl font-bold text-green-700 mt-1">{statusCounts.open || 0}</div>
+                                <div className="text-xs text-green-600 mt-1">Should show Reserve buttons</div>
                             </div>
                             <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
                                 <a 
@@ -692,6 +770,14 @@
                                             >
                                                 {selectedStore.status.charAt(0).toUpperCase() + selectedStore.status.slice(1).toLowerCase()}
                                             </div>
+                                            
+                                            {/* DEBUG INFO */}
+                                            <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-600">
+                                                <div>Raw Status: "{selectedStore.status}"</div>
+                                                <div>Lowercase: "{selectedStore.status.toLowerCase()}"</div>
+                                                <div>Is Open: {selectedStore.status.toLowerCase() === 'open' ? 'YES' : 'NO'}</div>
+                                                <div>Reserve URL: {CONFIG.RESERVE_URL ? 'Set' : 'Missing'}</div>
+                                            </div>
                                         </div>
                                         
                                         <div>
@@ -707,18 +793,24 @@
                                             </div>
                                         </div>
 
-                                        {selectedStore.status === 'open' && (
-                                            <div className="mt-6 pt-4 border-t">
+                                        {/* RESERVE BUTTON WITH DEBUG */}
+                                        <div className="mt-6 pt-4 border-t">
+                                            {selectedStore.status.toLowerCase() === 'open' ? (
                                                 <a
                                                     href={CONFIG.RESERVE_URL}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 font-medium text-center block"
+                                                    className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 font-medium text-center block transition-colors"
                                                 >
-                                                    Reserve Store
+                                                    🏪 Reserve This Store
                                                 </a>
-                                            </div>
-                                        )}
+                                            ) : (
+                                                <div className="w-full bg-gray-200 text-gray-500 px-4 py-3 rounded-lg text-center">
+                                                    Not Available for Reservation
+                                                    <div className="text-xs mt-1">Status: {selectedStore.status}</div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
