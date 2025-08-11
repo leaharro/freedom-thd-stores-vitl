@@ -271,8 +271,8 @@
                                 <p style="margin: 0 0 8px 0; font-size: 14px;">${store.city}, ${store.state} ${store.zip}</p>
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
                                     <span style="background: ${getStatusBgColor(store.status)}; color: ${getStatusTextColor(store.status)}; padding: 4px 12px; border-radius: 12px; font-size: 14px; font-weight: 500;">${statusDisplay}</span>
-                                    ${store.status === 'open' && store.reservationLink ? 
-                                        `<a href="${store.reservationLink}" target="_blank" style="background: #059669; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;">Reserve</a>` : 
+                                    ${store.status === 'open' ? 
+                                        (store.reservationLink ? `<a href="${store.reservationLink}" target="_blank" style="background: #059669; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;">Reserve</a>` : '') : 
                                         (store.status === 'reserved' || store.status === 'staffed') ? 
                                         `<a href="https://docs.google.com/spreadsheets/d/12PdSZNlFB23ieb8Er35lXuNWIN3viA65YhsutwWNBJU/edit?gid=424102901#gid=424102901" target="_blank" style="background: #3b82f6; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;">View Details</a>` : ''
                                     }
