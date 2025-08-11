@@ -289,20 +289,21 @@
 
                     const statusDisplay = store.status.charAt(0).toUpperCase() + store.status.slice(1).toLowerCase();
 
-                    // DEBUG: Log button creation logic
-                    const willShowButton = store.status.toLowerCase() === 'open';
-                    console.log(`🔍 Store ${index + 1}: ${store.storeName} | Status: "${store.status}" | Will show button: ${willShowButton}`);
+                    // DEBUG: Log button creation logic with detailed status checking
+                    const statusLower = store.status.toLowerCase().trim();
+                    const willShowButton = statusLower === 'open';
+                    console.log(`🔍 Store ${index + 1}: ${store.storeName} | Raw Status: "${store.status}" | Processed: "${statusLower}" | Will show button: ${willShowButton}`);
                     
                     if (index < 3) { // Log first 3 stores in detail
-                        addDebugInfo(`Store: ${store.storeName} | Status: "${store.status}" | Button: ${willShowButton}`);
+                        addDebugInfo(`Store: ${store.storeName} | Status: "${statusLower}" | Button: ${willShowButton}`);
                     }
 
                     let buttonHtml = '';
-                    if (store.status.toLowerCase() === 'open') {
-                        buttonHtml = `<a href="${CONFIG.RESERVE_URL}" target="_blank" style="background: #059669; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; display: inline-block; margin-top: 4px;">🏪 Reserve This Store</a>`;
-                        console.log(`✅ Reserve button created for ${store.storeName}`);
+                    if (statusLower === 'open') {
+                        buttonHtml = `<div style="margin-top: 12px; text-align: center;"><a href="${CONFIG.RESERVE_URL}" target="_blank" style="background: #059669; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🏪 Reserve This Store</a></div>`;
+                        console.log(`✅ Reserve button HTML created for ${store.storeName}: ${buttonHtml.length} chars`);
                     } else {
-                        console.log(`❌ No button for ${store.storeName} (status: ${store.status})`);
+                        console.log(`❌ No button for ${store.storeName} (status: "${store.status}" processed: "${statusLower}")`);
                     }
 
                     const infoWindow = new window.google.maps.InfoWindow({
@@ -317,7 +318,7 @@
                                     <span style="background: ${getStatusBgColor(store.status)}; color: ${getStatusTextColor(store.status)}; padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-block;">${statusDisplay}</span>
                                 </div>
                                 
-                                ${buttonHtml ? `<div style="margin-top: 12px; text-align: center;">${buttonHtml}</div>` : ''}
+                                ${buttonHtml}
                                 
                                 <!-- DEBUG INFO -->
                                 <div style="margin-top: 8px; padding: 6px; background: #f3f4f6; border-radius: 4px; font-size: 10px; color: #6b7280;">
@@ -452,12 +453,15 @@
                     const row = values[i];
                     
                     if (row.length >= 19) { // Use original column check, but try to access Column Z if available
-                        const status = row[0]?.toString().trim().toLowerCase();
+                        const rawStatus = row[0]?.toString() || '';
+                        const status = rawStatus.trim().toLowerCase();
                         const owner = row[1]?.toString().trim(); // Column B - Owner
                         
-                        // DEBUG: Log status parsing for first few rows
+                        // DEBUG: Log status parsing for first few rows with more detail
                         if (i < dataStartIndex + 5) {
-                            console.log(`🔍 Row ${i}: Status="${status}" | Owner="${owner}" | Raw status="${row[0]}"`);
+                            console.log(`🔍 Row ${i}: Raw="${rawStatus}" | Trimmed="${status}" | Owner="${owner}"`);
+                            console.log(`   Status chars: [${Array.from(rawStatus).map(c => c.charCodeAt(0)).join(',')}]`);
+                            console.log(`   Will include: ${(owner === CONFIG.OWNER_FILTER && ['reserved', 'staffed'].includes(status)) || (owner !== CONFIG.OWNER_FILTER && status === 'open')}`);
                         }
                         
                         // FILTER: Include VITL stores (Reserved/Staffed) OR any Non-VITL stores with "Open" status
@@ -493,7 +497,9 @@
                                 if (stores.length <= 5) {
                                     console.log(`✅ Store #${stores.length}: ${store.storeName} (${store.status}, Owner: "${store.owner}")`);
                                     console.log(`   Reservation link: "${store.reservationLink}"`);
-                                    console.log(`   Should show Reserve button: ${store.status.toLowerCase() === 'open'}`);
+                                    const shouldShowButton = store.status.toLowerCase() === 'open';
+                                    console.log(`   Should show Reserve button: ${shouldShowButton}`)
+                                    console.log(`   Status check: "${store.status.toLowerCase()}" === "open" = ${store.status.toLowerCase() === 'open'}`);
                                 } else if (stores.length % 100 === 0) {
                                     console.log(`✅ Processed ${stores.length} stores...`);
                                 }
