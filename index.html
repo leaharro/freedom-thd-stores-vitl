@@ -263,8 +263,20 @@
                     const statusDisplay = store.status.charAt(0).toUpperCase() + store.status.slice(1).toLowerCase();
 
                     let buttonHtml = '';
+                    
+                    // Debug logging for button logic
+                    if (i < dataStartIndex + 5) { // Debug first 5 stores
+                        console.log(`🔍 BUTTON DEBUG for ${store.storeName}:`);
+                        console.log(`   Status: "${store.status}"`);
+                        console.log(`   Reservation Link: "${store.reservationLink}"`);
+                        console.log(`   Should show Reserve button? ${store.status === 'open' && store.reservationLink}`);
+                    }
+                    
                     if (store.status === 'open' && store.reservationLink) {
                         buttonHtml = `<a href="${store.reservationLink}" target="_blank" style="background: #059669; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;">Reserve</a>`;
+                        console.log(`✅ Reserve button created for ${store.storeName}`);
+                    } else if (store.status === 'open') {
+                        console.log(`⚠️ Open store ${store.storeName} has no reservation link`);
                     }
                     // No buttons for Reserved/Staffed stores
 
