@@ -332,7 +332,7 @@
 
             const parseGoogleSheetsData = (values) => {
                 const stores = [];
-                const allStatusCounts = { open: 0, reserved: 0, staffed: 0 }; // Track all VITL stores for dashboard
+                const allStatusCounts = { open: 0, reserved: 0, staffed: 0 }; // Track all Open stores + VITL Reserved/Staffed
                 
                 // Find the header row
                 let headerRowIndex = -1;
@@ -359,12 +359,14 @@
                         const status = rawStatus.trim().toLowerCase();
                         const owner = row[1]?.toString().trim(); // Column B - Owner
                         
-                        // Count all VITL stores for dashboard display
-                        if (owner === CONFIG.OWNER_FILTER && ['open', 'reserved', 'staffed'].includes(status)) {
-                            allStatusCounts[status]++;
+                        // Count ALL Open stores (any owner) + VITL Reserved/Staffed for dashboard display
+                        if (status === 'open') {
+                            allStatusCounts.open++; // Count ALL Open stores regardless of owner
+                        } else if (owner === CONFIG.OWNER_FILTER && ['reserved', 'staffed'].includes(status)) {
+                            allStatusCounts[status]++; // Only count VITL Reserved/Staffed
                         }
                         
-                        // FILTER: Include VITL stores (Reserved/Staffed) ONLY - but count all for dashboard
+                        // FILTER: Include VITL stores (Reserved/Staffed) ONLY for map display
                         if (owner === CONFIG.OWNER_FILTER && ['reserved', 'staffed'].includes(status)) {
                             const latQ = parseFloat(row[16]); // Column Q - Latitude
                             const lngR = parseFloat(row[17]); // Column R - Longitude
