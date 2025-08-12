@@ -23,25 +23,11 @@
 
         // Configuration - FULLY CONFIGURED FOR VITL
         const CONFIG = {
-            // Your Google Sheet ID
             SHEET_ID: '1SzcwBIooLjgc8lVcXFyPM7UHc5eaav1y297VeRSOhlg',
-            
-            // Your Google Sheet tab name
             SHEET_NAME: 'Freedom THD Stores',
-            
-            // Your Google API Key
             API_KEY: 'AIzaSyBHcVkUgYLoJnNKpTecRUpAyMHU-T8HqFY',
-            
-            // Google Maps API Key
-            MAPS_API_KEY: 'AIzaSyBHcVkUgYLoJnNKpTecRUpAyMHU-T8HqFY',
-            
-            // Auto-refresh interval in minutes (corporate dashboard - more frequent updates)
             REFRESH_MINUTES: 3,
-            
-            // VITL Filter
             OWNER_FILTER: 'VITL',
-            
-            // Reserve Store URL - Updated with your new Google Form
             RESERVE_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSdgGe9EyaLg8RcbaRdKFTyP3PJnaoR8UrmxKMi0c_MGQ6o8FQ/viewform'
         };
 
@@ -49,7 +35,7 @@
         let map = null;
         let markers = [];
 
-        // Enhanced icons for corporate dashboard
+        // Icons
         const Filter = ({ className }) => (
             <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -71,7 +57,7 @@
         const RefreshCw = ({ className }) => (
             <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M1 4v6h6M23 20v-6h-6" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 073.51 15" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 713.51 15" />
             </svg>
         );
 
@@ -83,12 +69,12 @@
 
         // Initialize Google Map callback
         window.initMap = function() {
-            console.log('✅ Google Maps API loaded successfully for VITL Dashboard');
+            console.log('✅ Google Maps API loaded successfully');
         };
 
         const VITLStoresMap = () => {
             const [stores, setStores] = useState([]);
-            const [allStatusCounts, setAllStatusCounts] = useState({ open: 0, reserved: 0, staffed: 0 });
+            const [dashboardCounts, setDashboardCounts] = useState({ open: 0, reserved: 0, staffed: 0 });
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState('');
             const [lastUpdated, setLastUpdated] = useState(null);
@@ -96,103 +82,57 @@
             const [statusFilter, setStatusFilter] = useState('all');
             const [stateFilter, setStateFilter] = useState('all');
             const [selectedStore, setSelectedStore] = useState(null);
-            const [updateAnimation, setUpdateAnimation] = useState(false);
             const mapRef = useRef(null);
             const [mapLoaded, setMapLoaded] = useState(false);
 
-            // Enhanced status configuration for corporate dashboard
+            // Status colors
             const getStatusColor = (status) => {
                 switch (status.toLowerCase()) {
-                    case 'open': return '#2C5134';      // VITL green - available for assignment
-                    case 'reserved': return '#F59E0B';  // Amber - pending activation
-                    case 'staffed': return '#EF4444';   // Red - fully operational
-                    default: return '#6B7280';          // Gray - unknown status
+                    case 'open': return '#2C5134';
+                    case 'reserved': return '#CDEA80';
+                    case 'staffed': return '#DB864E';
+                    default: return '#6B7280';
                 }
             };
 
             const getStatusBgColor = (status) => {
                 switch (status.toLowerCase()) {
-                    case 'open': return '#E8F5E8';      // Light VITL green
-                    case 'reserved': return '#FEF3C7';  // Light amber
-                    case 'staffed': return '#FEE2E2';   // Light red
-                    default: return '#F3F4F6';          // Light gray
+                    case 'open': return '#E8F5E8';
+                    case 'reserved': return '#F4F9E8';
+                    case 'staffed': return '#FDF2E9';
+                    default: return '#F3F4F6';
                 }
             };
 
             const getStatusTextColor = (status) => {
                 switch (status.toLowerCase()) {
-                    case 'open': return '#2C5134';      // VITL green text
-                    case 'reserved': return '#92400E';  // Dark amber
-                    case 'staffed': return '#991B1B';   // Dark red
-                    default: return '#374151';          // Dark gray
+                    case 'open': return '#2C5134';
+                    case 'reserved': return '#7A8B3A';
+                    case 'staffed': return '#DB864E';
+                    default: return '#374151';
                 }
             };
 
             const initializeMap = () => {
-                if (!window.google?.maps?.Map || !mapRef.current) {
-                    return false;
-                }
+                if (!window.google?.maps?.Map || !mapRef.current) return false;
 
                 try {
                     map = new window.google.maps.Map(mapRef.current, {
                         zoom: 4,
-                        center: { lat: 39.8283, lng: -98.5795 }, // Center of US
+                        center: { lat: 39.8283, lng: -98.5795 },
                         mapTypeId: 'roadmap',
                         restriction: {
-                            latLngBounds: {
-                                north: 49.0,
-                                south: 25.0,
-                                west: -125.0,
-                                east: -66.0,
-                            },
+                            latLngBounds: { north: 49.0, south: 25.0, west: -125.0, east: -66.0 },
                             strictBounds: false,
                         },
                         styles: [
-                            {
-                                featureType: 'poi',
-                                elementType: 'labels',
-                                stylers: [{ visibility: 'off' }]
-                            },
-                            {
-                                featureType: 'road',
-                                elementType: 'labels',
-                                stylers: [{ visibility: 'off' }]
-                            },
-                            {
-                                featureType: 'road.local',
-                                elementType: 'geometry',
-                                stylers: [{ visibility: 'off' }]
-                            },
-                            {
-                                featureType: 'road.arterial',
-                                elementType: 'geometry',
-                                stylers: [{ lightness: 20 }]
-                            },
-                            {
-                                featureType: 'water',
-                                elementType: 'labels',
-                                stylers: [{ visibility: 'off' }]
-                            },
-                            {
-                                featureType: 'administrative.locality',
-                                elementType: 'labels',
-                                stylers: [{ visibility: 'off' }]
-                            },
-                            {
-                                featureType: 'landscape',
-                                elementType: 'labels',
-                                stylers: [{ visibility: 'off' }]
-                            },
-                            {
-                                featureType: 'administrative.province',
-                                elementType: 'geometry.stroke',
-                                stylers: [{ color: '#999999', weight: 1 }]
-                            },
-                            {
-                                featureType: 'transit',
-                                elementType: 'all',
-                                stylers: [{ visibility: 'off' }]
-                            }
+                            { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+                            { featureType: 'road', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+                            { featureType: 'road.local', elementType: 'geometry', stylers: [{ visibility: 'off' }] },
+                            { featureType: 'water', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+                            { featureType: 'administrative.locality', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+                            { featureType: 'landscape', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+                            { featureType: 'transit', elementType: 'all', stylers: [{ visibility: 'off' }] }
                         ],
                         streetViewControl: false,
                         fullscreenControl: false,
@@ -202,7 +142,7 @@
                     setMapLoaded(true);
                     return true;
                 } catch (error) {
-                    console.error('❌ Error initializing map:', error);
+                    console.error('Error initializing map:', error);
                     return false;
                 }
             };
@@ -214,8 +154,7 @@
                 markers.forEach(marker => marker.setMap(null));
                 markers = [];
 
-                // Add new markers for VITL stores
-                storeData.forEach((store, index) => {
+                storeData.forEach(store => {
                     const marker = new window.google.maps.Marker({
                         position: { lat: store.latitude, lng: store.longitude },
                         map: map,
@@ -231,10 +170,6 @@
                     });
 
                     const statusDisplay = store.status.charAt(0).toUpperCase() + store.status.slice(1).toLowerCase();
-                    const statusLower = store.status.toLowerCase().trim();
-                    
-                    // No Reserve buttons needed since we're only showing Reserved/Staffed stores
-                    let buttonHtml = '';
 
                     const infoWindow = new window.google.maps.InfoWindow({
                         content: `
@@ -243,36 +178,26 @@
                                 <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: normal; color: #666;">${store.retailer}</h4>
                                 <p style="margin: 0 0 4px 0; font-size: 14px; color: #374151;">${store.address}</p>
                                 <p style="margin: 0 0 8px 0; font-size: 14px; color: #374151;">${store.city}, ${store.state} ${store.zip}</p>
-                                
                                 <div style="margin-top: 12px;">
                                     <span style="background: ${getStatusBgColor(store.status)}; color: ${getStatusTextColor(store.status)}; padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-block;">${statusDisplay}</span>
                                 </div>
-                                
-                                ${buttonHtml}
                             </div>
                         `
                     });
 
                     marker.addListener('click', () => {
-                        // Close any open info windows
                         markers.forEach(m => m.infoWindow && m.infoWindow.close());
-                        
-                        // Open this info window
                         infoWindow.open(map, marker);
                         marker.infoWindow = infoWindow;
-                        
-                        // Update side panel
                         setSelectedStore(store);
                     });
 
                     markers.push(marker);
                 });
 
-                // Fit map to show all VITL stores
                 if (markers.length > 0) {
                     const bounds = new window.google.maps.LatLngBounds();
                     markers.forEach(marker => bounds.extend(marker.getPosition()));
-                    
                     map.fitBounds(bounds);
                     
                     const listener = window.google.maps.event.addListener(map, 'idle', function() {
@@ -281,9 +206,6 @@
                         if (currentZoom < 3) map.setZoom(3);
                         window.google.maps.event.removeListener(listener);
                     });
-                } else {
-                    map.setCenter({ lat: 39.8283, lng: -98.5795 });
-                    map.setZoom(4);
                 }
             };
 
@@ -291,50 +213,46 @@
                 try {
                     setLoading(true);
                     setError('');
-                    setUpdateAnimation(true);
 
                     const encodedSheetName = encodeURIComponent(CONFIG.SHEET_NAME);
                     const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodedSheetName}?key=${CONFIG.API_KEY}`;
                     
                     const response = await fetch(url);
-                    
                     if (!response.ok) {
                         const errorData = await response.json();
-                        throw new Error(`Google Sheets API error: ${response.status} - ${errorData.error?.message || response.statusText}`);
+                        throw new Error(`Google Sheets API error: ${response.status}`);
                     }
                     
                     const data = await response.json();
-                    
                     if (!data.values || data.values.length === 0) {
                         throw new Error('No data found in the specified sheet');
                     }
 
-                    const parseResult = parseGoogleSheetsData(data.values);
-                    setStores(parseResult.stores);
-                    setAllStatusCounts(parseResult.allStatusCounts);
+                    const { displayStores, counts } = parseGoogleSheetsData(data.values);
+                    
+                    console.log('📊 Dashboard Counts:', counts);
+                    console.log('🗺️ Map Display Stores:', displayStores.length);
+                    
+                    setStores(displayStores);
+                    setDashboardCounts(counts);
                     setLastUpdated(new Date());
 
-                    // Add markers to map if map is loaded
                     if (mapLoaded) {
-                        addMarkersToMap(parseResult.stores);
+                        addMarkersToMap(displayStores);
                     }
-
-                    // Trigger update animation
-                    setTimeout(() => setUpdateAnimation(false), 2000);
                     
                 } catch (err) {
                     setError(err.message);
-                    setUpdateAnimation(false);
                 } finally {
                     setLoading(false);
                 }
             };
 
             const parseGoogleSheetsData = (values) => {
-                const stores = [];
-                const allStatusCounts = { open: 0, reserved: 0, staffed: 0 }; // Track all Open stores + VITL Reserved/Staffed
+                const displayStores = []; // Only VITL Reserved/Staffed for map
+                const counts = { open: 0, reserved: 0, staffed: 0 }; // All stores for dashboard
                 
-                // Find the header row
+                // Find header row
                 let headerRowIndex = -1;
                 for (let i = 0; i < Math.min(3, values.length); i++) {
                     if (values[i] && values[i][0] && values[i][0].toString().toLowerCase().includes('status')) {
@@ -344,40 +262,37 @@
                 }
                 
                 if (headerRowIndex === -1) {
-                    return { stores, allStatusCounts };
+                    return { displayStores, counts };
                 }
                 
-                // Process data rows (skip header row)
                 const dataStartIndex = headerRowIndex + 1;
                 
-                // Process all data rows
                 for (let i = dataStartIndex; i < values.length; i++) {
                     const row = values[i];
                     
                     if (row.length >= 19) {
-                        const rawStatus = row[0]?.toString() || '';
-                        const status = rawStatus.trim().toLowerCase();
-                        const owner = row[1]?.toString().trim(); // Column B - Owner
+                        const status = row[0]?.toString().trim().toLowerCase();
+                        const owner = row[1]?.toString().trim();
                         
-                        // Count ALL Open stores (any owner) + VITL Reserved/Staffed for dashboard display
+                        // COUNT FOR DASHBOARD:
+                        // - ALL Open stores (any owner)
+                        // - VITL Reserved/Staffed stores
                         if (status === 'open') {
-                            allStatusCounts.open++; // Count ALL Open stores regardless of owner
-                        } else if (owner === CONFIG.OWNER_FILTER && ['reserved', 'staffed'].includes(status)) {
-                            allStatusCounts[status]++; // Only count VITL Reserved/Staffed
+                            counts.open++;
+                        } else if (owner === CONFIG.OWNER_FILTER && (status === 'reserved' || status === 'staffed')) {
+                            counts[status]++;
                         }
                         
-                        // FILTER: Include VITL stores (Reserved/Staffed) ONLY for map display
-                        if (owner === CONFIG.OWNER_FILTER && ['reserved', 'staffed'].includes(status)) {
-                            const latQ = parseFloat(row[16]); // Column Q - Latitude
-                            const lngR = parseFloat(row[17]); // Column R - Longitude
+                        // DISPLAY ON MAP: Only VITL Reserved/Staffed
+                        if (owner === CONFIG.OWNER_FILTER && (status === 'reserved' || status === 'staffed')) {
+                            const latQ = parseFloat(row[16]);
+                            const lngR = parseFloat(row[17]);
                             
                             if (!isNaN(latQ) && !isNaN(lngR)) {
-                                const store = {
+                                displayStores.push({
                                     status: row[0]?.toString().trim() || '',
                                     owner: owner,
                                     retailer: row[8]?.toString().trim() || '',
-                                    reserveLink: row[9]?.toString().trim() || '',
-                                    reservationLink: CONFIG.RESERVE_URL,
                                     storeNumber: row[10]?.toString().trim() || '',
                                     storeName: row[11]?.toString().trim() || '',
                                     address: row[12]?.toString().trim() || '',
@@ -386,60 +301,44 @@
                                     zip: row[18]?.toString().trim() || '',
                                     latitude: latQ,
                                     longitude: lngR
-                                };
-                                stores.push(store);
+                                });
                             }
                         }
                     }
                 }
                 
-                return { stores, allStatusCounts };
+                return { displayStores, counts };
             };
 
-            // Initialize map when Google Maps API loads
+            // Initialize map
             useEffect(() => {
                 let attempts = 0;
-                const maxAttempts = 50;
-
                 const checkGoogleMaps = () => {
                     attempts++;
-                    
                     if (window.google?.maps?.Map && mapRef.current) {
-                        const success = initializeMap();
-                        if (success) {
-                            return;
-                        }
+                        if (initializeMap()) return;
                     }
-                    
-                    if (attempts < maxAttempts) {
+                    if (attempts < 50) {
                         setTimeout(checkGoogleMaps, 100);
                     } else {
-                        setError('Failed to load Google Maps. Please refresh the page.');
+                        setError('Failed to load Google Maps');
                     }
                 };
-                
                 checkGoogleMaps();
             }, []);
 
-            // Update markers when stores or filters change
+            // Update markers when data changes
             useEffect(() => {
                 if (mapLoaded && stores.length > 0) {
                     addMarkersToMap(filteredStores);
                 }
-            }, [stores, filteredStores, mapLoaded, searchTerm, statusFilter, stateFilter]);
+            }, [stores, mapLoaded, searchTerm, statusFilter, stateFilter]);
 
-            // Initial load
+            // Initial load and auto-refresh
             useEffect(() => {
                 fetchFromGoogleSheets();
-            }, []);
-
-            // Auto-refresh setup for corporate dashboard
-            useEffect(() => {
                 if (CONFIG.REFRESH_MINUTES > 0) {
-                    const interval = setInterval(() => {
-                        fetchFromGoogleSheets();
-                    }, CONFIG.REFRESH_MINUTES * 60 * 1000);
-
+                    const interval = setInterval(fetchFromGoogleSheets, CONFIG.REFRESH_MINUTES * 60 * 1000);
                     return () => clearInterval(interval);
                 }
             }, []);
@@ -458,11 +357,6 @@
             }, [stores, searchTerm, statusFilter, stateFilter]);
 
             const uniqueStates = [...new Set(stores.map(store => store.state))].filter(state => state && state.trim() !== '').sort();
-            const statusCounts = stores.reduce((acc, store) => {
-                const status = store.status.toLowerCase();
-                acc[status] = (acc[status] || 0) + 1;
-                return acc;
-            }, {});
 
             return (
                 <div className="w-full h-screen bg-gray-50 flex flex-col">
@@ -473,7 +367,7 @@
                             <button
                                 onClick={fetchFromGoogleSheets}
                                 disabled={loading}
-                                className="px-4 md:px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 text-base md:text-lg touch-manipulation"
+                                className="px-4 md:px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 text-base md:text-lg"
                             >
                                 {loading ? <Loader className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
                                 <span className="hidden sm:inline">Refresh Data</span>
@@ -497,43 +391,53 @@
                             </div>
                         )}
 
-                        {/* Status Summary */}
+                        {/* Status Summary - Clean 3-column layout */}
                         <div className="mb-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border" style={{borderColor: '#2C5134', background: 'linear-gradient(135deg, #E8F5E8 0%, #D4EDD4 100%)'}}>
+                            {/* OPEN CARD - Clickable, counts ALL Open stores */}
+                            <a 
+                                href="https://leaharro.github.io/ff-open-stores-map/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block p-4 rounded-lg border hover:opacity-90 transition-colors duration-200"
+                                style={{borderColor: '#2C5134', background: 'linear-gradient(135deg, #E8F5E8 0%, #D4EDD4 100%)'}}
+                            >
                                 <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 rounded-full" style={{backgroundColor: '#2C5134'}}></div>
                                     <span className="font-medium" style={{color: '#2C5134'}}>Open</span>
                                 </div>
-                                <div className="text-2xl font-bold mt-1" style={{color: '#2C5134'}}>{statusCounts.open || 0}</div>
-                            </div>
-                            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
-                                <a 
-                                    href="https://docs.google.com/spreadsheets/d/12PdSZNlFB23ieb8Er35lXuNWIN3viA65YhsutwWNBJU/edit?gid=1169991112#gid=1169991112"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block hover:bg-gradient-to-br hover:from-yellow-100 hover:to-yellow-200 transition-colors duration-200"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
-                                        <span className="font-medium text-yellow-800">Reserved</span>
-                                    </div>
-                                    <div className="text-2xl font-bold text-yellow-700 mt-1">{statusCounts.reserved || 0}</div>
-                                </a>
-                            </div>
-                            <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-red-200">
-                                <a 
-                                    href="https://docs.google.com/spreadsheets/d/12PdSZNlFB23ieb8Er35lXuNWIN3viA65YhsutwWNBJU/edit?gid=1977784524#gid=1977784524"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block hover:bg-gradient-to-br hover:from-red-100 hover:to-red-200 transition-colors duration-200"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-4 h-4 rounded-full bg-red-500"></div>
-                                        <span className="font-medium text-red-800">Staffed</span>
-                                    </div>
-                                    <div className="text-2xl font-bold text-red-700 mt-1">{statusCounts.staffed || 0}</div>
-                                </a>
-                            </div>
+                                <div className="text-2xl font-bold mt-1" style={{color: '#2C5134'}}>{dashboardCounts.open}</div>
+                                <div className="text-xs text-gray-500 mt-1">Click to view Open stores</div>
+                            </a>
+
+                            {/* RESERVED CARD - Links to spreadsheet */}
+                            <a 
+                                href="https://docs.google.com/spreadsheets/d/12PdSZNlFB23ieb8Er35lXuNWIN3viA65YhsutwWNBJU/edit?gid=1169991112#gid=1169991112"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block p-4 rounded-lg border hover:opacity-90 transition-colors duration-200"
+                                style={{borderColor: '#CDEA80', background: 'linear-gradient(135deg, #F4F9E8 0%, #E8F0D3 100%)'}}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded-full" style={{backgroundColor: '#CDEA80'}}></div>
+                                    <span className="font-medium" style={{color: '#7A8B3A'}}>Reserved</span>
+                                </div>
+                                <div className="text-2xl font-bold mt-1" style={{color: '#7A8B3A'}}>{dashboardCounts.reserved}</div>
+                            </a>
+
+                            {/* STAFFED CARD - Links to spreadsheet */}
+                            <a 
+                                href="https://docs.google.com/spreadsheets/d/12PdSZNlFB23ieb8Er35lXuNWIN3viA65YhsutwWNBJU/edit?gid=1977784524#gid=1977784524"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block p-4 rounded-lg border hover:opacity-90 transition-colors duration-200"
+                                style={{borderColor: '#DB864E', background: 'linear-gradient(135deg, #FDF2E9 0%, #F9E5D3 100%)'}}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded-full" style={{backgroundColor: '#DB864E'}}></div>
+                                    <span className="font-medium" style={{color: '#DB864E'}}>Staffed</span>
+                                </div>
+                                <div className="text-2xl font-bold mt-1" style={{color: '#DB864E'}}>{dashboardCounts.staffed}</div>
+                            </a>
                         </div>
                         
                         {/* Filters */}
@@ -545,7 +449,7 @@
                                     placeholder="Search stores, cities, retailers..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="flex-1 px-3 py-2 border rounded-lg text-base md:text-lg touch-manipulation"
+                                    className="flex-1 px-3 py-2 border rounded-lg text-base md:text-lg"
                                 />
                             </div>
                             
@@ -555,7 +459,7 @@
                                     <select
                                         value={statusFilter}
                                         onChange={(e) => setStatusFilter(e.target.value)}
-                                        className="px-3 py-2 border rounded-lg text-base md:text-lg touch-manipulation min-w-0"
+                                        className="px-3 py-2 border rounded-lg text-base md:text-lg min-w-0"
                                     >
                                         <option value="all">All Status</option>
                                         <option value="reserved">Reserved</option>
@@ -566,7 +470,7 @@
                                 <select
                                     value={stateFilter}
                                     onChange={(e) => setStateFilter(e.target.value)}
-                                    className="px-3 py-2 border rounded-lg text-base md:text-lg touch-manipulation min-w-0"
+                                    className="px-3 py-2 border rounded-lg text-base md:text-lg min-w-0"
                                 >
                                     <option value="all">All States</option>
                                     {uniqueStates.map(state => (
@@ -593,7 +497,6 @@
                                     <div className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl shadow-lg border">
                                         <Loader className="w-8 h-8 animate-spin text-blue-600" />
                                         <span className="text-gray-700 font-medium">Loading VITL store data...</span>
-                                        <div className="text-sm text-gray-500">Filtering for VITL-owned locations</div>
                                     </div>
                                 </div>
                             )}
@@ -610,7 +513,7 @@
                                         </div>
                                         <button
                                             onClick={() => setSelectedStore(null)}
-                                            className="text-gray-400 hover:text-gray-600 text-3xl ml-3 touch-manipulation flex-shrink-0"
+                                            className="text-gray-400 hover:text-gray-600 text-3xl ml-3 flex-shrink-0"
                                         >
                                             ×
                                         </button>
@@ -642,8 +545,6 @@
                                                 {selectedStore.city}, {selectedStore.state} {selectedStore.zip}
                                             </div>
                                         </div>
-
-                                        {/* No Reserve button needed for Reserved/Staffed stores */}
                                     </div>
                                 </div>
                             </div>
